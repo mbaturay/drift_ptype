@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table with Slider</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="header">
+        <button class="hamburger-menu" id="hamburger-menu">☰</button>
+        <div class="user-avatar">👤</div>
+    </header>
+
+    <div class="main-content">
+<nav class="side-navigation" id="side-navigation">
+        <ul>
+            <li><a href="#"><span class="menu-icon">  
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-home"><path d="M3 9.5L10 4l7 5.5V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9.5z"/><path d="M9 22V12h6v10"/></svg>
+            </span><span class="menu-text">Home</span></a></li>
+            <li class="active"><a href="#"><span class="menu-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-folder"><path d="M22 19V7a2 2 0 0 0-2-2h-7l-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2z"/></svg>
+            </span><span class="menu-text">Library</span></a></li>
+            <li><a href="#"><span class="menu-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span><span class="menu-text">Research</span></a></li>
+            <li><a href="#"><span class="menu-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-settings"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </span><span class="menu-text">Filters</span></a></li>
+        </ul>
+    </nav>        <div class="content-area">
+            <div class="page-header">
+                <h1 class="page-title">Library</h1>
+                <div class="selection-actions">
+                    <div class="selection-info" id="selection-info">0 items selected</div>
+                    <div class="batch-action-dropdown">
+                        <button class="batch-action-btn" id="batch-action-btn">Actions ▾</button>
+                        <div class="dropdown-content" id="batch-actions-menu">
+                            <a href="#" class="batch-action" data-action="download">Download Selected</a>
+                            <a href="#" class="batch-action" data-action="share">Share Selected</a>
+                            <a href="#" class="batch-action" data-action="move">Move to Collection</a>
+                            <a href="#" class="batch-action" data-action="delete">Delete Selected</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="view-matches-banner" class="view-matches-banner" style="display:none;">
+                Viewing matches for "<span id="view-matches-term"></span>".
+                <button id="restore-view" class="cancel-btn" style="margin-left: 8px;">Restore view</button>
+                <button id="back-to-rules" class="primary-btn" style="margin-left: 8px;">Back to Rules</button>
+            </div>
+            
+            <div class="search-filter-container">
+                <div class="search-container">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="search-input" placeholder="Search documents...">
+                    <button class="advanced-search-toggle" id="advanced-search-toggle">Advanced Search</button>
+                </div>
+            </div>
+            
+            <div class="advanced-search-panel" id="advanced-search-panel">
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label for="filter-type">Type</label>
+                        <select id="filter-type">
+                            <option value="">All Types</option>
+                            <option value="Wildfire">Wildfire</option>
+                            <option value="GRC">GRC</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Energy">Energy</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filter-state">State</label>
+                        <select id="filter-state">
+                            <option value="">All States</option>
+                            <option value="Idaho">Idaho</option>
+                            <option value="Oregon">Oregon</option>
+                            <option value="Washington">Washington</option>
+                            <option value="California">California</option>
+                            <option value="Nevada">Nevada</option>
+                            <option value="Texas">Texas</option>
+                            <option value="Arizona">Arizona</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filter-industry">Industry</label>
+                        <select id="filter-industry">
+                            <option value="">All Industries</option>
+                            <option value="Electric">Electric</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Energy">Energy</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filter-year">Year</label>
+                        <select id="filter-year">
+                            <option value="">All Years</option>
+                            <option value="2021">2021</option>
+                            <option value="2022">2022</option>
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-buttons">
+                    <button class="clear-filters" id="clear-filters">Clear Filters</button>
+                    <button class="apply-filters" id="apply-filters">Apply Filters</button>
+                </div>
+            </div>
+            
+            <!-- Grouping Panel for Drag-and-Drop Grouping -->
+            <div id="grouping-panel" class="grouping-panel" style="margin-bottom: 12px; min-height: 40px; border: 1px dashed #bbb; background: #fafbfc; display: flex; align-items: center; padding: 8px; gap: 8px;">
+                <span style="color: #888;">Drag columns here to group</span>
+            </div>
+            
+            <table id="documents-table">
+                <thead>
+                    <tr>
+                        <th class="checkbox-column"><input type="checkbox" id="select-all-checkbox"></th>
+                        <th data-sort="isNew" id="th-ingested" draggable="false">Ingested</th>
+                        <th data-sort="title" id="th-title" draggable="true">Title</th>
+                        <th data-sort="type" id="th-type" draggable="true">Type</th>
+                        <th data-sort="state" id="th-state" draggable="true">State</th>
+                        <th data-sort="industry" id="th-industry" draggable="true">Industry</th>
+                        <th data-sort="company" id="th-company" draggable="true">Company</th>
+                        <th data-sort="year" id="th-year" draggable="true">Year</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="checkbox-column"><input type="checkbox" class="row-checkbox"></td>
+                        <td>BPA-Wildfire-Mitigation-Plan.pdf</td>
+                        <td>Wildfire</td>
+                        <td>Idaho, Oregon, Washington</td>
+                        <td>Electric</td>
+                        <td>Bonneville Power Administration</td>
+                        <td>2022</td>
+                    </tr>
+                    <tr>
+                        <td class="checkbox-column"><input type="checkbox" class="row-checkbox"></td>
+                        <td>Project-X-Development-Plan.pdf</td>
+                        <td>Technology</td>
+                        <td>California, Nevada</td>
+                        <td>Technology</td>
+                        <td>Tech Innovators Inc.</td>
+                        <td>2025</td>
+                    </tr>
+                    <tr>
+                        <td class="checkbox-column"><input type="checkbox" class="row-checkbox"></td>
+                        <td>Green-Energy-Report.pdf</td>
+                        <td>Energy</td>
+                        <td>Texas, Arizona</td>
+                        <td>Energy</td>
+                        <td>Green Future LLC</td>
+                        <td>2023</td>
+                    </tr>
+                    <tr>
+                        <td class="checkbox-column"><input type="checkbox" class="row-checkbox"></td>
+                        <td>Renewable-Resources-Strategy.pdf</td>
+                        <td>GRC</td>
+                        <td>Colorado, Utah</td>
+                        <td>Energy</td>
+                        <td>Eco Solutions Corp</td>
+                        <td>2024</td>
+                    </tr>
+                    <tr>
+                        <td class="checkbox-column"><input type="checkbox" class="row-checkbox"></td>
+                        <td>Smart-Grid-Analysis.pdf</td>
+                        <td>Wildfire</td>
+                        <td>New York, Massachusetts</td>
+                        <td>Electric</td>
+                        <td>Northeast Power Systems</td>
+                        <td>2021</td>
+                    </tr>
+                    <tr>
+                        <td class="checkbox-column"><input type="checkbox" class="row-checkbox"></td>
+                        <td>Grid-Modernization-Plan.pdf</td>
+                        <td>Technology</td>
+                        <td>California, Nevada</td>
+                        <td>Technology</td>
+                        <td>Tech Innovators Inc.</td>
+                        <td>2025</td>
+                    </tr>
+                    <tr>
+                        <td class="checkbox-column"><input type="checkbox" class="row-checkbox"></td>
+                        <td>California-Energy-Report.pdf</td>
+                        <td>Energy</td>
+                        <td>California, Nevada</td>
+                        <td>Energy</td>
+                        <td>Green Future LLC</td>
+                        <td>2023</td>
+                    </tr>
+                    <tr>
+                        <td class="checkbox-column"><input type="checkbox" class="row-checkbox"></td>
+                        <td>Idaho-Grid-Upgrade.pdf</td>
+                        <td>Wildfire</td>
+                        <td>Idaho, Oregon, Washington</td>
+                        <td>Electric</td>
+                        <td>Bonneville Power Administration</td>
+                        <td>2022</td>
+                    </tr>
+                    <tr>
+                        <td class="checkbox-column"><input type="checkbox" class="row-checkbox"></td>
+                        <td>Oregon-Grid-Upgrade.pdf</td>
+                        <td>Wildfire</td>
+                        <td>Idaho, Oregon, Washington</td>
+                        <td>Electric</td>
+                        <td>Bonneville Power Administration</td>
+                        <td>2022</td>
+                    </tr>
+                    <tr>
+                        <td class="checkbox-column"><input type="checkbox" class="row-checkbox"></td>
+                        <td>Company-Expansion-Plan.pdf</td>
+                        <td>Technology</td>
+                        <td>California, Nevada</td>
+                        <td>Technology</td>
+                        <td>Tech Innovators Inc.</td>
+                        <td>2025</td>
+                    </tr>
+                    <!-- Add more rows as needed -->
+                </tbody>
+            </table>
+
+            <div class="slider" id="slider">
+                <div class="slider-content">
+                    <button class="close-slider">&times;</button>
+                    <div style="clear: both;"></div>
+                    <div id="metadata"></div>
+                    <div id="rules-panel" class="rules-panel" style="display:none;">
+                        <div class="tabs">
+                            <button id="rules-tab-build" class="tab-btn active">Build Rules</button>
+                            <button id="rules-tab-matches" class="tab-btn">Matches</button>
+                        </div>
+                        <div id="rules-build" class="tab-content active section">
+                            <h3 style="margin-top:0;">Rules Engine</h3>
+                            <div class="form-group">
+                                <label for="rp-rule-logic">Logic</label>
+                                <select id="rp-rule-logic">
+                                    <option value="AND">AND</option>
+                                    <option value="OR">OR</option>
+                                </select>
+                            </div>
+                            <div id="rp-conditions"></div>
+                            <button id="rp-add-cond" class="secondary-btn" style="margin-bottom: 8px;">Add Condition</button>
+                            <div id="rp-match-preview" class="rule-match-preview" style="display:none;"></div>
+                            <div class="form-group">
+                                <label for="rp-collection">Target Collection</label>
+                                <input id="rp-collection" type="text" placeholder="Collection name..." autocomplete="off" />
+                            </div>
+                            <div class="inline-actions">
+                                <button id="rp-save-apply" class="primary-btn" disabled>Save &amp; Apply</button>
+                                <button id="rp-suggest" class="secondary-btn">Suggest Rules (beta)</button>
+                            </div>
+                            <div id="rp-suggestions" class="rule-suggestions"></div>
+                            <hr>
+                            <h4>Existing Rules</h4>
+                            <ul id="rp-rules-list"></ul>
+                        </div>
+                        <div id="rules-matches" class="tab-content section">
+                            <div class="inline-actions" style="justify-content: space-between;">
+                                <div>Showing matches for: <strong id="rp-match-term">—</strong></div>
+                                <div>
+                                    <button id="rp-refresh-matches" class="secondary-btn">Refresh</button>
+                                    <button id="rp-back-to-build" class="cancel-btn">Back to Build</button>
+                                </div>
+                            </div>
+                            <div id="rp-matches-table" style="max-height: 50vh; overflow:auto;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collection Modal -->
+    <div id="collection-modal" class="modal">
+        <div class="modal-content collection-modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>Move to Collection</h2>
+            <p>Select a collection to move the selected document(s):</p>
+            
+            <!-- Collection Search -->
+            <div class="collection-search-container">
+                <input type="text" id="collection-search" placeholder="Search collections...">
+            </div>
+            
+            <!-- Recently Used Collections -->
+            <div class="recent-collections">
+                <h3>Recently Used</h3>
+                <div class="recent-collections-list" id="recent-collections-list">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+            
+            <!-- All Collections -->
+            <h3>All Collections</h3>
+            <div class="collections-list" id="collections-list">
+                <!-- Will be populated dynamically -->
+            </div>
+            
+            <div class="modal-actions">
+                <button id="create-collection" class="create-btn">Create New Collection</button>
+                <div class="spacer"></div>
+                <button id="cancel-move" class="cancel-btn">Cancel</button>
+                <button id="confirm-move" class="primary-btn">Move</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create New Collection Modal -->
+    <div id="new-collection-modal" class="modal">
+        <div class="modal-content small-modal-content">
+            <span class="modal-close new-collection-close">&times;</span>
+            <h2>Create New Collection</h2>
+            <div class="form-group">
+                <label for="new-collection-name">Collection Name:</label>
+                <input type="text" id="new-collection-name" placeholder="Enter collection name...">
+            </div>
+            <div class="modal-actions">
+                <button id="cancel-create" class="cancel-btn">Cancel</button>
+                <button id="confirm-create" class="primary-btn">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Notification -->
+    <div id="success-notification" class="notification">
+        <div class="notification-content">
+            <span class="notification-icon">✓</span>
+            <span id="notification-message">Operation completed successfully</span>
+        </div>
+    </div>
+
+    <!-- Rules Engine Button -->
+    <button id="open-rules-engine" class="primary-btn" style="position: fixed; bottom: 24px; right: 24px; z-index: 1000;">Rules Engine</button>
+
+    <!-- Rules Engine Modal -->
+    <div id="rules-engine-modal" class="modal">
+        <div class="modal-content small-modal-content">
+            <span class="modal-close rules-engine-close">&times;</span>
+            <h2>Rules Engine</h2>
+            <div class="form-group">
+                <label for="rule-logic">Logic:</label>
+                <select id="rule-logic">
+                    <option value="AND">AND (all conditions must match)</option>
+                    <option value="OR">OR (any condition matches)</option>
+                </select>
+            </div>
+            <div id="rule-conditions-list"></div>
+            <button id="add-condition" class="secondary-btn" style="margin-bottom: 12px;">Add Condition</button>
+            <div id="rule-match-preview" class="rule-match-preview" style="font-size: 12px; color: #555; margin: 6px 0 12px; display: none;"></div>
+            <div class="form-group">
+                <label for="rule-collection">Target Collection:</label>
+                <input type="text" id="rule-collection" placeholder="Collection name..." autocomplete="off">
+                <div id="collection-suggestions" class="suggestions-list" style="position:relative;"></div>
+            </div>
+            <div class="form-group">
+                <button id="suggest-rules" class="secondary-btn">Suggest Rules (beta)</button>
+                <div id="rule-suggestions" class="rule-suggestions"></div>
+            </div>
+            <div class="modal-actions">
+                <button id="add-rule" class="primary-btn" disabled>Save &amp; Apply</button>
+                <button id="close-rules-engine" class="cancel-btn">Done</button>
+            </div>
+            <hr>
+            <h3>Existing Rules</h3>
+            <ul id="rules-list"></ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
