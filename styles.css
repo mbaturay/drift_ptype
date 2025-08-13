@@ -238,6 +238,17 @@ tbody tr.selected {
     border-color: #adc6ff;
     color: #2f54eb;
 }
+.badge-auto {
+    background: #e6fffb;
+    border-color: #87e8de;
+    color: #08979c;
+}
+.ingested-label {
+    display: inline-block;
+    margin-right: 6px;
+    color: #666;
+    font-size: 12px;
+}
 .collection-chip {
     border-radius: 12px;
     padding: 2px 6px;

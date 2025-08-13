@@ -160,10 +160,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // On first load, mark only some docs as new
     document.addEventListener('DOMContentLoaded', function() {
         var anySeeded = Object.keys(docState).length > 0;
-        if (!anySeeded && window.tableData && window.tableData.length) {
+    if (!anySeeded && window.tableData && window.tableData.length) {
             window.tableData.forEach(function(doc, i) {
                 // Mark first 3 as new, rest as seen
-                docState[doc.id] = { isNew: i < 3, collections: [] };
+        docState[doc.id] = { isNew: i < 3, collections: [], autoBy: null };
             });
             saveDocState();
         }
@@ -179,7 +179,20 @@ document.addEventListener('DOMContentLoaded', function() {
             var cells = row.querySelectorAll('td');
             if (cells.length > 0) {
         var id = i; // stable in this demo
-        var existing = docState[id] || { isNew: true, collections: [] };
+    var existing = docState[id] || { isNew: true, collections: [], autoBy: null };
+        // Seed ingestedAt if missing
+        if (!existing.ingestedAt) {
+            try {
+                var now = Date.now();
+                var bucket = i % 5;
+                var meta = (typeof documentMetadata !== 'undefined' && documentMetadata[id]) ? documentMetadata[id] : null;
+                if (bucket === 0) existing.ingestedAt = now - Math.floor(Math.random()*4*60*60*1000); // within last 4h
+                else if (bucket === 1) existing.ingestedAt = now - (24*60*60*1000) + Math.floor(Math.random()*2*60*60*1000); // yesterday
+                else if (bucket === 2) existing.ingestedAt = now - (3*24*60*60*1000); // 3 days ago
+                else if (bucket === 3) existing.ingestedAt = now - (6*24*60*60*1000); // 6 days ago
+                else existing.ingestedAt = meta && meta.date ? new Date(meta.date).getTime() : (now - 30*24*60*60*1000);
+            } catch(_) {}
+        }
         docState[id] = existing;
         tableData.push({
             id: id,
@@ -194,6 +207,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     saveDocState();
+    }
+
+    // Helper to format ingested label
+    function formatIngestedLabel(ts) {
+        if (!ts) return '—';
+        var t = (typeof ts === 'number') ? ts : new Date(ts).getTime();
+        if (!t || isNaN(t)) return '—';
+        var now = Date.now();
+        var diff = now - t;
+        var H = 60*60*1000; // hour
+        var D = 24*H; // day
+        if (diff < H) return 'Last hour';
+        if (diff < D) return 'Last 24 hours';
+        if (diff < 7*D) return 'Last 7 days';
+        if (diff < 30*D) return 'Last 30 days';
+        var d = new Date(t);
+        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     }
 
     // Toggle advanced search panel
@@ -388,12 +418,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // New column
                 var newCell = document.createElement('td');
-                var state = docState[rowData.id] || { isNew: true, collections: [] };
+                var state = docState[rowData.id] || { isNew: true, collections: [], autoBy: null };
+                // Ingested label
+                var ing = document.createElement('span');
+                ing.className = 'ingested-label';
+                var ts = state.ingestedAt;
+                ing.textContent = formatIngestedLabel(ts);
+                if (ts) ing.title = new Date(ts).toLocaleString();
+                newCell.appendChild(ing);
                 if (state.isNew) {
                     var newBadge = document.createElement('span');
                     newBadge.className = 'badge badge-new';
                     newBadge.textContent = 'New';
                     newCell.appendChild(newBadge);
+                }
+                if (state.autoBy) {
+                    var autoBadge = document.createElement('span');
+                    autoBadge.className = 'badge badge-auto';
+                    autoBadge.title = 'Added by rule: '+state.autoBy;
+                    autoBadge.textContent = 'Auto';
+                    newCell.appendChild(autoBadge);
                 }
                 row.appendChild(newCell);
                 // Add title column
@@ -817,12 +861,25 @@ document.addEventListener('DOMContentLoaded', function() {
                         row.appendChild(checkboxCell);
                         // New column
                         var newCell = document.createElement('td');
-                        var state = docState[rowData.id] || { isNew: true, collections: [] };
+                        var state = docState[rowData.id] || { isNew: true, collections: [], autoBy: null };
+                        var ing2 = document.createElement('span');
+                        ing2.className = 'ingested-label';
+                        var ts2 = state.ingestedAt;
+                        ing2.textContent = formatIngestedLabel(ts2);
+                        if (ts2) ing2.title = new Date(ts2).toLocaleString();
+                        newCell.appendChild(ing2);
                         if (state.isNew) {
                             var newBadge = document.createElement('span');
                             newBadge.className = 'badge badge-new';
                             newBadge.textContent = 'New';
                             newCell.appendChild(newBadge);
+                        }
+                        if (state.autoBy) {
+                            var autoBadge = document.createElement('span');
+                            autoBadge.className = 'badge badge-auto';
+                            autoBadge.title = 'Added by rule: '+state.autoBy;
+                            autoBadge.textContent = 'Auto';
+                            newCell.appendChild(autoBadge);
                         }
                         row.appendChild(newCell);
                         // Title with badges
@@ -1364,14 +1421,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // === Slider Rules Panel Controller ===
     (function(){
         if (!rulesPanel) return;
-        var tabBuildBtn = document.getElementById('rules-tab-build');
-        var tabMatchesBtn = document.getElementById('rules-tab-matches');
-        var buildPane = document.getElementById('rules-build');
-        var matchesPane = document.getElementById('rules-matches');
+    var tabBuildBtn = document.getElementById('rules-tab-build');
+    var tabMatchesBtn = document.getElementById('rules-tab-matches');
+    var tabExistingBtn = document.getElementById('rules-tab-existing');
+    var buildPane = document.getElementById('rules-build');
+    var matchesPane = document.getElementById('rules-matches');
+    var existingPane = document.getElementById('rules-existing');
         var condHost = document.getElementById('rp-conditions');
         var addCondBtn = document.getElementById('rp-add-cond');
-        var logicSel = document.getElementById('rp-rule-logic');
-        var collInput = document.getElementById('rp-collection');
+    var logicSel = document.getElementById('rp-rule-logic');
+    var nameInput = document.getElementById('rp-rule-name');
+    var modeSyncChk = document.getElementById('rp-rule-sync');
+    var collInput = document.getElementById('rp-collection');
         var matchPrev = document.getElementById('rp-match-preview');
         var saveApplyBtn = document.getElementById('rp-save-apply');
         var suggestBtn = document.getElementById('rp-suggest');
@@ -1380,7 +1441,9 @@ document.addEventListener('DOMContentLoaded', function() {
         var matchTerm = document.getElementById('rp-match-term');
         var matchesTable = document.getElementById('rp-matches-table');
         var refreshMatchesBtn = document.getElementById('rp-refresh-matches');
-        var backToBuildBtn = document.getElementById('rp-back-to-build');
+    var backToBuildBtn = document.getElementById('rp-back-to-build');
+    var existingHost = document.getElementById('rp-existing');
+    var newRuleBtn = document.getElementById('rp-new-rule');
 
         var pFieldOptions = [
             { value: 'title', label: 'Title' },
@@ -1435,7 +1498,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var vi = document.createElement('input'); vi.type='text'; vi.placeholder='Value...'; vi.value=cond.value||'';
                 var del = document.createElement('button'); del.textContent='Delete';
                 del.onclick=function(){ pConds.splice(idx,1); pRenderConds(); };
-                fs.onchange=function(){ cond.field=fs.value; };
+                fs.onchange=function(){ cond.field=fs.value; pUpdatePreview(); };
                 cs.onchange=function(){ cond.condition=cs.value; pUpdatePreview(); };
                 vi.oninput=function(){ cond.value=vi.value; pUpdatePreview(); };
                 wrap.appendChild(fs); wrap.appendChild(cs); wrap.appendChild(vi); wrap.appendChild(del);
@@ -1453,27 +1516,109 @@ document.addEventListener('DOMContentLoaded', function() {
             rules.forEach(function(r,i){
                 var li=document.createElement('li');
                 var text=r.conditions.map(function(c){return c.field+' '+c.condition+' "'+c.value+'"';}).join(' '+r.logic+' ');
-                li.textContent = text + ' → ' + r.collection;
+                li.textContent = (r.name ? (r.name+': ') : '') + text + ' → ' + r.collection + (r.enabled===false ? ' (disabled)' : '');
                 var del=document.createElement('button'); del.textContent='Delete'; del.style.marginLeft='8px';
                 del.onclick=function(){ rules.splice(i,1); localStorage.setItem('docRules', JSON.stringify(rules)); pRenderRules(); window.applyRules&&window.applyRules(); };
                 li.appendChild(del); rulesUl.appendChild(li);
             });
+            // Keep existing tab in sync
+            pRenderExisting();
+        }
+        function pRenderExisting(){
+            if (!existingHost) return;
+            var rules = JSON.parse(localStorage.getItem('docRules')||'[]');
+            existingHost.innerHTML = '';
+            if (rules.length===0){
+                var empty=document.createElement('div'); empty.style.color='#666'; empty.textContent='No rules yet. Create one from Build Rules.'; existingHost.appendChild(empty); return;
+            }
+            var list=document.createElement('div'); list.style.display='flex'; list.style.flexDirection='column'; list.style.gap='6px';
+            rules.forEach(function(r,idx){
+                var row=document.createElement('div');
+                row.style.display='grid'; row.style.gridTemplateColumns='auto 1fr auto auto auto auto auto'; row.style.gap='8px'; row.style.alignItems='center';
+                row.style.padding='6px'; row.style.border='1px solid #eee'; row.style.borderRadius='6px'; row.style.background='#fff';
+                var toggle=document.createElement('input'); toggle.type='checkbox'; toggle.checked = r.enabled!==false; toggle.title='Enable/disable';
+                toggle.onchange=function(){ var arr=JSON.parse(localStorage.getItem('docRules')||'[]'); if (arr[idx]){ arr[idx].enabled = toggle.checked; localStorage.setItem('docRules', JSON.stringify(arr)); window.applyRules&&window.applyRules(); pRenderRules(); } };
+                var text=document.createElement('div'); text.style.fontSize='13px';
+                var modeLabel = (r.mode==='sync'?' · Sync':'');
+                text.innerHTML = (r.name?('<strong>'+r.name+'</strong>: '):'') + (r.conditions||[]).map(function(c){return '<code>'+c.field+'</code> '+c.condition+' "'+(c.value||'')+'"';}).join(' <strong>'+(r.logic||'AND')+'</strong> ') + ' → <strong>'+(r.collection||'')+'</strong>' + modeLabel;
+                if (r.enabled===false) text.style.opacity='0.6';
+                var activity=document.createElement('div'); activity.style.fontSize='12px'; activity.style.color='#666';
+                try { var act = JSON.parse(localStorage.getItem('docRuleActivity')||'{}')[idx]||{}; var added24 = act.added24||0; var removed24 = act.removed24||0; activity.textContent = (added24>0?('+'+added24):'+0') + (r.mode==='sync'?(' / -'+removed24):'') + ' last 24h'; } catch(_) { activity.textContent = '+0 last 24h'; }
+                var view=document.createElement('button'); view.className='secondary-btn'; view.textContent='View matches'; view.onclick=function(){
+                    if (tabMatchesBtn) tabMatchesBtn.click();
+                    var tempConds = r.conditions || [];
+                    var logic = r.logic || 'AND';
+                    var matchDocs=[];
+                    if (window.tableData){
+                        for (var i=0;i<tableData.length;i++){
+                            var d=tableData[i];
+                            var m = tempConds.length===0 ? false : (logic==='AND' ? tempConds.every(function(c){return pEval(d,c);}) : tempConds.some(function(c){return pEval(d,c);}));
+                            if (m) matchDocs.push(d);
+                        }
+                    }
+                    matchesTable.innerHTML='';
+                    var countEl=document.createElement('div'); countEl.style.marginBottom='8px'; countEl.textContent = matchDocs.length + ' match'+(matchDocs.length===1?'':'es'); matchesTable.appendChild(countEl);
+                    var tbl=document.createElement('table'); tbl.style.width='100%'; tbl.style.borderCollapse='collapse';
+                    var thead=document.createElement('thead'); var trh=document.createElement('tr');
+                    ['Title','Type','State','Industry','Company','Year'].forEach(function(h){ var th=document.createElement('th'); th.textContent=h; th.style.border='1px solid #eee'; th.style.background='#fafafa'; th.style.padding='6px'; trh.appendChild(th); });
+                    thead.appendChild(trh); tbl.appendChild(thead);
+                    var tb=document.createElement('tbody');
+                    matchDocs.forEach(function(d){ var tr=document.createElement('tr'); ['title','type','state','industry','company','year'].forEach(function(k){ var td=document.createElement('td'); td.textContent=d[k]; td.style.border='1px solid #f0f0f0'; td.style.padding='6px'; tr.appendChild(td); }); tb.appendChild(tr); });
+                    tbl.appendChild(tb); matchesTable.appendChild(tbl);
+                    var t=''; for (var i=0;i<tempConds.length;i++){ var v=(tempConds[i].value||'').trim(); if (v){ t=v; break; } }
+                    matchTerm.textContent = t || '—';
+                };
+                var edit=document.createElement('button'); edit.className='secondary-btn'; edit.textContent='Edit'; edit.onclick=function(){
+                    switchTab('build');
+                    pConds = JSON.parse(JSON.stringify(r.conditions||[]));
+                    logicSel.value = r.logic || 'AND';
+                    collInput.value = r.collection || '';
+                    if (typeof modeSyncChk !== 'undefined' && modeSyncChk) { modeSyncChk.checked = (r.mode === 'sync'); }
+                    if (nameInput) { nameInput.value = r.name || ''; }
+                    pRenderConds();
+                    if (buildPane) buildPane.dataset.editingIndex = String(idx);
+                    if (saveApplyBtn) saveApplyBtn.textContent = 'Update Rule';
+                };
+                var upBtn=document.createElement('button'); upBtn.className='secondary-btn'; upBtn.textContent='↑'; upBtn.title='Move up'; upBtn.onclick=function(){ var arr=JSON.parse(localStorage.getItem('docRules')||'[]'); if (idx<=0) return; var tmp=arr[idx-1]; arr[idx-1]=arr[idx]; arr[idx]=tmp; localStorage.setItem('docRules', JSON.stringify(arr)); pRenderExisting(); };
+                var downBtn=document.createElement('button'); downBtn.className='secondary-btn'; downBtn.textContent='↓'; downBtn.title='Move down'; downBtn.onclick=function(){ var arr=JSON.parse(localStorage.getItem('docRules')||'[]'); if (idx>=arr.length-1) return; var tmp=arr[idx+1]; arr[idx+1]=arr[idx]; arr[idx]=tmp; localStorage.setItem('docRules', JSON.stringify(arr)); pRenderExisting(); };
+                var del=document.createElement('button'); del.className='cancel-btn'; del.textContent='Delete'; del.onclick=function(){ var arr=JSON.parse(localStorage.getItem('docRules')||'[]'); arr.splice(idx,1); localStorage.setItem('docRules', JSON.stringify(arr)); pRenderRules(); window.applyRules&&window.applyRules(); };
+                row.appendChild(toggle); row.appendChild(text); row.appendChild(activity); row.appendChild(view); row.appendChild(edit); row.appendChild(upBtn); row.appendChild(downBtn); row.appendChild(del);
+                list.appendChild(row);
+            });
+            existingHost.appendChild(list);
         }
         function pApplyRules(){ window.applyRules && window.applyRules(); }
 
         saveApplyBtn.onclick = function(){
             if (!collInput.value.trim() || pConds.length===0) return;
             var rules = JSON.parse(localStorage.getItem('docRules')||'[]');
-            rules.push({logic: logicSel.value, conditions: JSON.parse(JSON.stringify(pConds)), collection: collInput.value.trim()});
+            var editingIdx = buildPane && buildPane.dataset.editingIndex != null ? parseInt(buildPane.dataset.editingIndex) : -1;
+            var payload = {name: (nameInput?nameInput.value.trim():''), logic: logicSel.value, mode: (modeSyncChk && modeSyncChk.checked ? 'sync' : 'add'), conditions: JSON.parse(JSON.stringify(pConds)), collection: collInput.value.trim(), enabled: true};
+            if (!isNaN(editingIdx) && editingIdx >= 0 && editingIdx < rules.length) {
+                rules[editingIdx] = payload;
+            } else {
+                rules.push(payload);
+            }
             localStorage.setItem('docRules', JSON.stringify(rules));
+            // Compute matches for the saved payload before clearing builder state
+            var cnt = 0;
+            try {
+                if (window.tableData && payload.conditions && payload.conditions.length) {
+                    for (var i=0;i<window.tableData.length;i++){
+                        var d = window.tableData[i];
+                        var m = payload.logic==='AND' ? payload.conditions.every(function(c){return pEval(d,c);}) : payload.conditions.some(function(c){return pEval(d,c);});
+                        if (m) cnt++;
+                    }
+                }
+            } catch(_) { cnt = 0; }
+            // Apply and refresh UI
             pConds = []; pRenderConds(); pRenderRules(); pApplyRules();
             try {
-                var cnt = pCount();
                 var note = document.getElementById('success-notification');
                 var msg = document.getElementById('notification-message');
-                if (note && msg) { msg.textContent='Rule added and applied ('+cnt+' matches) to "'+collInput.value.trim()+'"'; note.classList.add('show'); setTimeout(function(){ note.classList.remove('show'); }, 2500); }
+                if (note && msg) { msg.textContent=(editingIdx>=0?'Rule updated and applied ':'Rule added and applied ')+ '('+cnt+' match'+(cnt===1?'':'es')+') to "'+payload.collection+'"'; note.classList.add('show'); setTimeout(function(){ note.classList.remove('show'); }, 2500); }
             } catch(_) {}
-            collInput.value=''; pUpdatePreview();
+            collInput.value=''; if (nameInput) nameInput.value=''; if (modeSyncChk) modeSyncChk.checked=false; if (buildPane) delete buildPane.dataset.editingIndex; if (saveApplyBtn) saveApplyBtn.textContent='Save & Apply'; pUpdatePreview();
         };
 
         suggestBtn.onclick = function(){
@@ -1527,18 +1672,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function switchTab(tab){
-            if (tab==='build') { tabBuildBtn.classList.add('active'); tabMatchesBtn.classList.remove('active'); buildPane.classList.add('active'); matchesPane.classList.remove('active'); }
-            else { tabMatchesBtn.classList.add('active'); tabBuildBtn.classList.remove('active'); matchesPane.classList.add('active'); buildPane.classList.remove('active'); pShowMatches(); }
+            [tabBuildBtn, tabMatchesBtn, tabExistingBtn].forEach(function(btn){ if(btn) btn.classList.remove('active'); });
+            [buildPane, matchesPane, existingPane].forEach(function(p){ if(p) p.classList.remove('active'); });
+            if (tab==='build') { if(tabBuildBtn) tabBuildBtn.classList.add('active'); if(buildPane) buildPane.classList.add('active'); }
+            else if (tab==='matches') { if(tabMatchesBtn) tabMatchesBtn.classList.add('active'); if(matchesPane) { matchesPane.classList.add('active'); pShowMatches(); } }
+            else if (tab==='existing') { if(tabExistingBtn) tabExistingBtn.classList.add('active'); if(existingPane) { existingPane.classList.add('active'); pRenderExisting(); } }
         }
         tabBuildBtn.onclick = function(){ switchTab('build'); };
         tabMatchesBtn.onclick = function(){ switchTab('matches'); };
+        if (tabExistingBtn) tabExistingBtn.onclick = function(){ switchTab('existing'); };
         backToBuildBtn.onclick = function(){ switchTab('build'); };
         refreshMatchesBtn.onclick = function(){ pShowMatches(); };
+        if (newRuleBtn) newRuleBtn.onclick = function(){ switchTab('build'); };
 
         window.initRulesPanel = function(){
             switchTab('build');
             pRenderConds();
             pRenderRules();
+            pRenderExisting();
         };
     })();
     // === Advanced Rules Engine Logic ===
@@ -1760,14 +1911,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         // Overwrite applyRules logic
-        window.applyRules = function() {
+    window.applyRules = function() {
             var rules = JSON.parse(localStorage.getItem('docRules') || '[]');
             var collections = JSON.parse(localStorage.getItem('docCollections') || '{}');
+            var now = Date.now();
+            var activity = JSON.parse(localStorage.getItem('docRuleActivity')||'{}');
             if (!window.tableData) return;
             Object.keys(collections).forEach(function(c) { collections[c] = []; });
             window.tableData.forEach(function(doc) {
                 for (var i = 0; i < rules.length; ++i) {
                     var rule = rules[i];
+            if (rule && rule.enabled === false) { continue; }
                     var match = false;
                     if (rule.logic === 'AND') {
                         match = rule.conditions.every(function(cond) {
@@ -1788,20 +1942,49 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     if (match) {
                         if (!collections[rule.collection]) collections[rule.collection] = [];
-                        collections[rule.collection].push(doc);
+                        if (!collections[rule.collection].some(function(d){ return d.id===doc.id; })) {
+                            collections[rule.collection].push(doc);
+                            activity[i] = activity[i] || {events:[]};
+                            activity[i].events.push({t:now, type:'add', id:doc.id});
+                        }
                         // Also ensure docState reflects this membership
                         try {
-                            var st = docState[doc.id] || { isNew: true, collections: [] };
+                            var st = docState[doc.id] || { isNew: true, collections: [], autoBy: null };
                             if (!st.collections.includes(rule.collection)) {
                                 st.collections.push(rule.collection);
+                                st.autoBy = st.autoBy || (rule.name && rule.name.length ? rule.name : (rule.conditions && rule.conditions.length ? (rule.conditions[0].field+':'+rule.conditions[0].value) : 'Rule'));
                                 docState[doc.id] = st;
                             }
                         } catch(e) { /* ignore */ }
                         break;
+                    } else if (rule.mode === 'sync') {
+                        if (collections[rule.collection]) {
+                            var before = collections[rule.collection].length;
+                            collections[rule.collection] = collections[rule.collection].filter(function(d){ return d.id !== doc.id; });
+                            if (collections[rule.collection].length < before) {
+                                activity[i] = activity[i] || {events:[]}; activity[i].events.push({t:now, type:'remove', id:doc.id});
+                            }
+                        }
+                        try {
+                            var st2 = docState[doc.id] || { isNew: true, collections: [], autoBy: null };
+                            var idx = st2.collections.indexOf(rule.collection);
+                            if (idx !== -1) { st2.collections.splice(idx,1); if (st2.collections.length===0) st2.autoBy = null; docState[doc.id] = st2; }
+                        } catch(e) {}
                     }
                 }
             });
             localStorage.setItem('docCollections', JSON.stringify(collections));
+            try {
+                var cutoff = Date.now() - 24*60*60*1000;
+                Object.keys(activity).forEach(function(k){
+                    var ev = activity[k].events || [];
+                    ev = ev.filter(function(e){ return e.t >= cutoff; });
+                    activity[k].events = ev;
+                    activity[k].added24 = ev.filter(function(e){return e.type==='add';}).length;
+                    activity[k].removed24 = ev.filter(function(e){return e.type==='remove';}).length;
+                });
+                localStorage.setItem('docRuleActivity', JSON.stringify(activity));
+            } catch(_) {}
             try { saveDocState(); } catch(e) {}
             if (window.renderCollectionsList) window.renderCollectionsList();
             // Refresh rows so badges reflect changes

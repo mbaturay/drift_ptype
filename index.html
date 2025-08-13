@@ -232,15 +232,24 @@
                         <div class="tabs">
                             <button id="rules-tab-build" class="tab-btn active">Build Rules</button>
                             <button id="rules-tab-matches" class="tab-btn">Matches</button>
+                            <button id="rules-tab-existing" class="tab-btn">Existing Rules</button>
                         </div>
                         <div id="rules-build" class="tab-content active section">
                             <h3 style="margin-top:0;">Rules Engine</h3>
+                            <div class="form-group">
+                                <label for="rp-rule-name">Rule name</label>
+                                <input id="rp-rule-name" type="text" placeholder="Optional name for this rule" autocomplete="off" />
+                            </div>
                             <div class="form-group">
                                 <label for="rp-rule-logic">Logic</label>
                                 <select id="rp-rule-logic">
                                     <option value="AND">AND</option>
                                     <option value="OR">OR</option>
                                 </select>
+                            </div>
+                            <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+                                <input type="checkbox" id="rp-rule-sync" />
+                                <label for="rp-rule-sync" style="margin:0; font-weight:normal;">Keep in sync (adds and removes)</label>
                             </div>
                             <div id="rp-conditions"></div>
                             <button id="rp-add-cond" class="secondary-btn" style="margin-bottom: 8px;">Add Condition</button>
@@ -267,6 +276,15 @@
                                 </div>
                             </div>
                             <div id="rp-matches-table" style="max-height: 50vh; overflow:auto;"></div>
+                        </div>
+                        <div id="rules-existing" class="tab-content section">
+                            <div class="inline-actions" style="justify-content: space-between;">
+                                <div>All rules</div>
+                                <div>
+                                    <button id="rp-new-rule" class="secondary-btn">New Rule</button>
+                                </div>
+                            </div>
+                            <div id="rp-existing" style="max-height: 55vh; overflow:auto;"></div>
                         </div>
                     </div>
                 </div>
